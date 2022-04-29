@@ -10,7 +10,7 @@ export const App = () => {
   return (
     <Feed
       displayRows={10}
-      className="articles"  
+      className="articles"
     >
       {(startIndex) => items.slice(startIndex, startIndex + 16).map((item) => (
         <article 

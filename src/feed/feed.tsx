@@ -17,12 +17,16 @@ import './feed.css';
 type Props = Omit<ComponentProps<'div'>, 'children'> & {
   displayRows: number; // how many rows you expect to see
   children: (startIndex: number) => ReactNode[];
+  onReadHeight?: (element: HTMLLIElement, index: number) => number;
 }
+
+const defaultReadHeight: Props['onReadHeight'] = (element) => element.clientHeight;
 
 export const Feed: FC<Props> = (props) => {
   const {
     children,
     displayRows,
+    onReadHeight = defaultReadHeight,
     className = '',
     ...divProps
   } = props;
@@ -52,7 +56,6 @@ export const Feed: FC<Props> = (props) => {
   const calcOffsets = useCallback(
     (height: number, index: number) => {
       const offsets = offsetsRef.current;
-
       const prevOffset = offsets[index] || 0;
 
       offsets[index] = index 
@@ -78,16 +81,15 @@ export const Feed: FC<Props> = (props) => {
 
   const handleItemRender = useCallback(
     (itemElement: HTMLLIElement, index: number) => {
-      const clientHeight = itemElement.clientHeight;
-
+      const clientHeight = onReadHeight(itemElement, index);
       const offset = calcOffsets(clientHeight, index);
 
       itemElement.style.visibility = '';
       itemElement.style.transform = `translateY(${offset - clientHeight}px)`;
 
-      defineItemsHeight();
+      queueMicrotask(() => defineItemsHeight());
     },
-    [calcOffsets, defineItemsHeight],
+    [calcOffsets, defineItemsHeight, onReadHeight],
   );
 
   const handleScroll = useCallback(
