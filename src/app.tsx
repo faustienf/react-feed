@@ -12,7 +12,7 @@ export const App = () => {
       displayRows={10}
       className="articles"  
     >
-      {items.map(item => (
+      {(startIndex) => items.slice(startIndex, startIndex + 16).map((item) => (
         <article 
           key={item.id}
           className="article"

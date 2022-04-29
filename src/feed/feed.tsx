@@ -1,7 +1,7 @@
 import React, {
     ComponentProps,
     FC,
-    PropsWithChildren,
+    ReactNode,
     useCallback,
     useMemo,
     useRef,
@@ -14,11 +14,12 @@ import { FeedItem } from './feed-item';
 
 import './feed.css';
 
-type Props = ComponentProps<'div'> & {
+type Props = Omit<ComponentProps<'div'>, 'children'> & {
   displayRows: number; // how many rows you expect to see
+  children: (startIndex: number) => ReactNode[];
 }
 
-export const Feed: FC<PropsWithChildren<Props>> = (props) => {
+export const Feed: FC<Props> = (props) => {
   const {
     children,
     displayRows,
@@ -89,16 +90,6 @@ export const Feed: FC<PropsWithChildren<Props>> = (props) => {
     [calcOffsets, defineItemsHeight],
   );
 
-  const allItems = useMemo(
-    () => React.Children.toArray(children),
-    [children],
-  );
-
-  const sliceItems = useMemo(
-    () => allItems?.slice(startIndex, startIndex + displayRows + (threshold * 2)),
-    [allItems, displayRows, startIndex, threshold],
-  );
-
   const handleScroll = useCallback(
     (e: Event) => {
       const {
@@ -138,7 +129,7 @@ export const Feed: FC<PropsWithChildren<Props>> = (props) => {
         ref={itemsRef}
         className="feed-items"
       >
-        {sliceItems.map((item, index) => (
+        {children(startIndex).map((item, index) => (
           <FeedItem
             key={startIndex + index}
             index={startIndex + index}
