@@ -1,10 +1,23 @@
 import React from 'react';
 import './app.css';
+import { Feed } from './feed';
+
+const items = Array(10000).fill(0).map((_, index) => ({
+  id: index,
+}));
 
 export const App = () => {
   return (
-    <div className="app">
-      
-    </div>
+    <Feed
+      displayRows={10}
+      className="articles"  
+    >
+      {items.map(item => (
+        <article 
+          key={item.id}
+          className="article"
+        />
+      ))}
+    </Feed>
   );
 }
