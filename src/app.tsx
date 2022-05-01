@@ -9,7 +9,7 @@ const items = Array(10000).fill(0).map((_, index) => ({
 export const App = () => {
   return (
     <Feed
-      threshold={2}
+      threshold={3}
       className="articles"
       onReadHeight={(el) => el.clientHeight + 10}
     >

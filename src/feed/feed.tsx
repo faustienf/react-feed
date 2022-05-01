@@ -4,7 +4,6 @@ import React, {
     ReactNode,
     useCallback,
     useEffect,
-    useMemo,
     useRef,
     useState
 } from 'react';
@@ -28,7 +27,6 @@ export const Feed: FC<Props> = (props) => {
   } = props;
 
   const [startIndex, setStartIndex] = useState(0);
-
   const offsetsRef = useRef<number[]>([]);
   const itemsRef = useRef<HTMLDivElement>(null);
   const itemsSliceRef = useRef<HTMLDivElement>(null);
@@ -49,7 +47,7 @@ export const Feed: FC<Props> = (props) => {
 
       offsets[index] = index 
           ? height + offsets[index - 1]
-          : 0;
+          : height;
 
       // redefine offsets by diff
       const diff = offsets[index] - prevOffset;
@@ -74,9 +72,9 @@ export const Feed: FC<Props> = (props) => {
         scrollTop,
       } = e.target as HTMLDivElement;
 
-      const offsets = offsetsRef.current;
-
       queueMicrotask(() => {
+        const offsets = offsetsRef.current;
+
         const [, foundIndex] = binarySearch(offsets, (offset, index) => {
           const prevOffest = offsets[index - 1] || 0;
           const isFound = offset >= scrollTop && scrollTop > prevOffest;
@@ -87,16 +85,11 @@ export const Feed: FC<Props> = (props) => {
           return scrollTop - offset;
         });
 
-        const nextStartIndex = Math.max(foundIndex - threshold, 0);
+        const nextStartIndex = Math.max(foundIndex - (threshold - 1), 0);
         setStartIndex(nextStartIndex);
       });
     },
     [threshold],
-  );
-
-  const items = useMemo(
-    () => childrenRef.current(startIndex),
-    [startIndex],
   );
 
   useEffect(
@@ -110,7 +103,15 @@ export const Feed: FC<Props> = (props) => {
       Array
         .from(itemsSlice.children)
         .forEach(async (node, index) => {
+          if (!(node instanceof HTMLElement)) {
+            return;
+          }
+          // skip extra read height
+          if (node.dataset.index) {
+            return;
+          }
           const indexOfList = startIndex + index;
+          node.dataset.index = String(indexOfList);
           const clientHeight = onReadHeightRef.current(node, indexOfList);
           calcOffsets(clientHeight, indexOfList);
         });
@@ -118,11 +119,8 @@ export const Feed: FC<Props> = (props) => {
       queueMicrotask(() => {
         const offsets = offsetsRef.current;
         items.style.minHeight = `${offsets[offsets.length - 1]}px`;
-        items.style.position = 'relative';
-
-        itemsSlice.style.width = '100%';
-        itemsSlice.style.position = 'absolute';
-        itemsSlice.style.transform = `translateY(${offsets[startIndex]}px)`;
+        const top = offsets[startIndex] - offsets[0];
+        itemsSlice.style.transform = `translateY(${top}px)`;
       });
     },
     [calcOffsets, startIndex],
@@ -134,8 +132,11 @@ export const Feed: FC<Props> = (props) => {
       onScroll={handleScroll}
     >
       <div ref={itemsRef}>
-        <div ref={itemsSliceRef}>
-          {items}
+        <div 
+          ref={itemsSliceRef}
+          style={{position: 'relative'}}  
+        >
+          {childrenRef.current(startIndex)}
         </div>
       </div>
     </div>
