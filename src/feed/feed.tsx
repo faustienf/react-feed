@@ -3,20 +3,20 @@ import React, {
     FC,
     ReactNode,
     useCallback,
+    useEffect,
     useMemo,
     useRef,
     useState
 } from 'react';
 
 import { binarySearch } from './binary-search';
-import { FeedItem } from './feed-item';
 
 import './feed.css';
 
 type Props = Omit<ComponentProps<'div'>, 'children'> & {
   threshold: number;
   children: (startIndex: number) => ReactNode[];
-  onReadHeight?: (element: HTMLLIElement, index: number) => number;
+  onReadHeight?: (element: Element, index: number) => number;
 }
 
 const defaultReadHeight: Props['onReadHeight'] = (element) => element.clientHeight;
@@ -33,8 +33,8 @@ export const Feed: FC<Props> = (props) => {
   const [startIndex, setStartIndex] = useState(0);
 
   const offsetsRef = useRef<number[]>([]);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const itemsRef = useRef<HTMLUListElement>(null);
+  const itemsRef = useRef<HTMLDivElement>(null);
+  const itemsSliceRef = useRef<HTMLDivElement>(null);
 
   const startIndexRef = useRef(startIndex);
   startIndexRef.current = startIndex;
@@ -44,20 +44,6 @@ export const Feed: FC<Props> = (props) => {
 
   const onReadHeightRef = useRef(onReadHeight);
   onReadHeightRef.current = onReadHeight;
-
-  const defineItemsHeight = useCallback(
-    () => {
-      const offsets = offsetsRef.current;
-      const startOffset = offsets[startIndexRef.current];
-      const lastOffset = offsets[offsets.length - 1];
-      const itemsEl = itemsRef.current;
-      if (itemsEl) {
-        itemsEl.style.setProperty('padding-top', `${startOffset}px`);
-        itemsEl.style.setProperty('min-height', `${lastOffset}px`);
-      }
-    },
-    [],
-  );
 
   const calcOffsets = useCallback(
     (height: number, index: number): number => {
@@ -83,16 +69,6 @@ export const Feed: FC<Props> = (props) => {
       return offsets[index];
     },
     [],
-  );
-
-  const handleItemRender = useCallback(
-    (itemElement: HTMLLIElement, index: number) => {
-      queueMicrotask(() => {
-        const clientHeight = onReadHeightRef.current(itemElement, index);
-        calcOffsets(clientHeight, index);
-      });
-    },
-    [calcOffsets],
   );
 
   const handleScroll = useCallback(
@@ -126,39 +102,49 @@ export const Feed: FC<Props> = (props) => {
     [startIndex],
   );
 
-  const style = useMemo(
+  useEffect(
     () => {
-      const offsets = offsetsRef.current;
-      return {
-        paddingTop: `${offsets[startIndex]}px`,
-        minHeight: `${offsets[offsets.length - 1]}px`
-      };
+      const items = itemsRef.current;
+      const itemsSlice = itemsSliceRef.current;
+      if (!items || !itemsSlice) {
+        return;
+      }
+
+      Array
+        .from(itemsSlice.children)
+        .forEach(async (node, index) => {
+          const indexOfList = startIndex + index;
+          const clientHeight = onReadHeightRef.current(node, indexOfList);
+          calcOffsets(clientHeight, indexOfList);
+        });
+
+      queueMicrotask(() => {
+        const offsets = offsetsRef.current;
+        items.style.minHeight = `${offsets[offsets.length - 1]}px`;
+        itemsSlice.style.width = '100%';
+        itemsSlice.style.position = 'absolute';
+        itemsSlice.style.transform = `translateY(${offsets[startIndex]}px)`;
+      });
     },
-    [startIndex],
+    [calcOffsets, startIndex],
   );
 
   return (
     <div
       {...divProps}
-      ref={rootRef}
       className={`feed ${className}`.trim()}
       onScroll={handleScroll}
     >
-      <ul
+      <div
         ref={itemsRef}
-        style={style}
         className="feed-items"
       >
-        {items.map((item, index) => (
-          <FeedItem
-            key={startIndex + index}
-            index={startIndex + index}
-            onRender={handleItemRender}
-          >
-            {item}
-          </FeedItem>
-        ))}
-      </ul>
+        <div 
+          ref={itemsSliceRef}
+        >
+          {items}
+        </div>
+      </div>
     </div>
   );
 };

@@ -13,7 +13,7 @@ export const App = () => {
       className="articles"
       onReadHeight={(el) => el.clientHeight + 10}
     >
-      {(startIndex) => items.slice(startIndex, startIndex + 16).map((item) => (
+      {(startIndex) => items.slice(startIndex, startIndex + 14).map((item) => (
         <article 
           key={item.id}
           className="article"
