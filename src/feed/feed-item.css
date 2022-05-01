@@ -1,5 +1,5 @@
 .feed-item {
-  position: absolute;
+  /* position: absolute; */
   width: 100%;
-  will-change: tranform;
+  /* will-change: tranform; */
 }

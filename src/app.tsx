@@ -9,15 +9,18 @@ const items = Array(10000).fill(0).map((_, index) => ({
 export const App = () => {
   return (
     <Feed
-      displayRows={10}
+      threshold={2}
       className="articles"
+      onReadHeight={(el) => el.clientHeight + 10}
     >
       {(startIndex) => items.slice(startIndex, startIndex + 16).map((item) => (
         <article 
           key={item.id}
           className="article"
-        />
+        >
+          {item.id}
+        </article>
       ))}
     </Feed>
   );
-}
+};

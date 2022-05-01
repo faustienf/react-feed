@@ -9,13 +9,12 @@ import React, {
 } from 'react';
 
 import { binarySearch } from './binary-search';
-import { usePassiveScroll } from './use-passive-scroll';
 import { FeedItem } from './feed-item';
 
 import './feed.css';
 
 type Props = Omit<ComponentProps<'div'>, 'children'> & {
-  displayRows: number; // how many rows you expect to see
+  threshold: number;
   children: (startIndex: number) => ReactNode[];
   onReadHeight?: (element: HTMLLIElement, index: number) => number;
 }
@@ -25,42 +24,49 @@ const defaultReadHeight: Props['onReadHeight'] = (element) => element.clientHeig
 export const Feed: FC<Props> = (props) => {
   const {
     children,
-    displayRows,
+    threshold,
     onReadHeight = defaultReadHeight,
     className = '',
     ...divProps
   } = props;
 
   const [startIndex, setStartIndex] = useState(0);
+
   const offsetsRef = useRef<number[]>([]);
   const rootRef = useRef<HTMLDivElement>(null);
   const itemsRef = useRef<HTMLUListElement>(null);
-  
-  const threshold = useMemo(
-    () => Math.ceil((displayRows + 1) / 2),
-    [displayRows],
-  );
+
+  const startIndexRef = useRef(startIndex);
+  startIndexRef.current = startIndex;
+
+  const childrenRef = useRef(children);
+  childrenRef.current = children;
+
+  const onReadHeightRef = useRef(onReadHeight);
+  onReadHeightRef.current = onReadHeight;
 
   const defineItemsHeight = useCallback(
     () => {
       const offsets = offsetsRef.current;
+      const startOffset = offsets[startIndexRef.current];
       const lastOffset = offsets[offsets.length - 1];
       const itemsEl = itemsRef.current;
       if (itemsEl) {
-        itemsEl.style.setProperty('height', `${lastOffset}px`);
+        itemsEl.style.setProperty('padding-top', `${startOffset}px`);
+        itemsEl.style.setProperty('min-height', `${lastOffset}px`);
       }
     },
     [],
   );
 
   const calcOffsets = useCallback(
-    (height: number, index: number) => {
+    (height: number, index: number): number => {
       const offsets = offsetsRef.current;
       const prevOffset = offsets[index] || 0;
 
       offsets[index] = index 
           ? height + offsets[index - 1]
-          : height;
+          : 0;
 
       // redefine offsets by diff
       const diff = offsets[index] - prevOffset;
@@ -81,57 +87,69 @@ export const Feed: FC<Props> = (props) => {
 
   const handleItemRender = useCallback(
     (itemElement: HTMLLIElement, index: number) => {
-      const clientHeight = onReadHeight(itemElement, index);
-      const offset = calcOffsets(clientHeight, index);
-
-      itemElement.style.visibility = '';
-      itemElement.style.transform = `translateY(${offset - clientHeight}px)`;
-
-      queueMicrotask(() => defineItemsHeight());
+      queueMicrotask(() => {
+        const clientHeight = onReadHeightRef.current(itemElement, index);
+        calcOffsets(clientHeight, index);
+      });
     },
-    [calcOffsets, defineItemsHeight, onReadHeight],
+    [calcOffsets],
   );
 
   const handleScroll = useCallback(
-    (e: Event) => {
+    (e: React.UIEvent<HTMLDivElement>) => {
       const {
         scrollTop,
-      } = e.target as Element;
+      } = e.target as HTMLDivElement;
 
       const offsets = offsetsRef.current;
 
-      const [, foundIndex] = binarySearch(offsets, (offset, index) => {
-        const prevOffest = offsets[index - 1] || 0;
-        const isFound = offset > scrollTop && scrollTop >= prevOffest;
+      queueMicrotask(() => {
+        const [, foundIndex] = binarySearch(offsets, (offset, index) => {
+          const prevOffest = offsets[index - 1] || 0;
+          const isFound = offset >= scrollTop && scrollTop > prevOffest;
+  
+          if (isFound) {
+            return 0;
+          }
+          return scrollTop - offset;
+        });
 
-        if (isFound) {
-          return 0;
-        }
-        return offset - scrollTop;
+        const nextStartIndex = Math.max(foundIndex - threshold, 0);
+        setStartIndex(nextStartIndex);
       });
-
-      const nextStartIndex = Math.max(foundIndex - threshold, 0);
-      setStartIndex(nextStartIndex);
     },
     [threshold],
   );
 
-  usePassiveScroll(
-    rootRef,
-    handleScroll,
+  const items = useMemo(
+    () => childrenRef.current(startIndex),
+    [startIndex],
+  );
+
+  const style = useMemo(
+    () => {
+      const offsets = offsetsRef.current;
+      return {
+        paddingTop: `${offsets[startIndex]}px`,
+        minHeight: `${offsets[offsets.length - 1]}px`
+      };
+    },
+    [startIndex],
   );
 
   return (
     <div
       {...divProps}
       ref={rootRef}
-      className={`feed ${className}`}
+      className={`feed ${className}`.trim()}
+      onScroll={handleScroll}
     >
       <ul
         ref={itemsRef}
+        style={style}
         className="feed-items"
       >
-        {children(startIndex).map((item, index) => (
+        {items.map((item, index) => (
           <FeedItem
             key={startIndex + index}
             index={startIndex + index}
