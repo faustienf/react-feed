@@ -11,8 +11,6 @@ import React, {
 
 import { binarySearch } from './binary-search';
 
-import './feed.css';
-
 type Props = Omit<ComponentProps<'div'>, 'children'> & {
   threshold: number;
   children: (startIndex: number) => ReactNode[];
@@ -26,7 +24,6 @@ export const Feed: FC<Props> = (props) => {
     children,
     threshold,
     onReadHeight = defaultReadHeight,
-    className = '',
     ...divProps
   } = props;
 
@@ -121,6 +118,8 @@ export const Feed: FC<Props> = (props) => {
       queueMicrotask(() => {
         const offsets = offsetsRef.current;
         items.style.minHeight = `${offsets[offsets.length - 1]}px`;
+        items.style.position = 'relative';
+
         itemsSlice.style.width = '100%';
         itemsSlice.style.position = 'absolute';
         itemsSlice.style.transform = `translateY(${offsets[startIndex]}px)`;
@@ -132,16 +131,10 @@ export const Feed: FC<Props> = (props) => {
   return (
     <div
       {...divProps}
-      className={`feed ${className}`.trim()}
       onScroll={handleScroll}
     >
-      <div
-        ref={itemsRef}
-        className="feed-items"
-      >
-        <div 
-          ref={itemsSliceRef}
-        >
+      <div ref={itemsRef}>
+        <div ref={itemsSliceRef}>
           {items}
         </div>
       </div>
