@@ -11,7 +11,7 @@ export const App = () => {
     <Feed
       threshold={3}
       className="articles"
-      onReadHeight={(el) => el.clientHeight + 10}
+      onReadHeight={(el) => el.offsetHeight + 10}
     >
       {(startIndex) => items.slice(startIndex, startIndex + 14).map((item) => (
         <article 

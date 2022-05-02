@@ -13,7 +13,7 @@ import { binarySearch } from './binary-search';
 type Props = Omit<ComponentProps<'div'>, 'children'> & {
   threshold: number;
   children: (startIndex: number) => ReactNode[];
-  onReadHeight?: (element: Element, index: number) => number;
+  onReadHeight?: (element: HTMLElement, index: number) => number;
 }
 
 const defaultReadHeight: Props['onReadHeight'] = (element) => element.clientHeight;
