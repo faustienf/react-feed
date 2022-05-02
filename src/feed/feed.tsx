@@ -106,8 +106,10 @@ export const Feed: FC<Props> = (props) => {
           if (!(node instanceof HTMLElement)) {
             return;
           }
-          // skip extra read height
-          if (node.dataset.index) {
+          /**
+           * skip extra read height, but always read first element.
+           */
+          if (index > 0 && node.dataset.index) {
             return;
           }
           const indexOfList = startIndex + index;
