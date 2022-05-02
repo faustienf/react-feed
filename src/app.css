@@ -1,13 +1,18 @@
 .articles {
+  padding-top: 300px;
   width: 500px;
-  max-height: 500px;
-  overflow: auto;
+  max-width: 100%;
 }
 
 .article {
-  height: 50px;
-  background-image: linear-gradient( 135deg, #FFD3A5 10%, #FD6585 100%);
+  height: 200px;
+  background-image: linear-gradient(135deg, #FFD3A5 10%, #FD6585 100%);
   border-radius: 10px;
   margin-bottom: 10px;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 80px;
 }

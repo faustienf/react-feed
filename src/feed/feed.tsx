@@ -1,18 +1,14 @@
 import React, {
     ComponentProps,
     FC,
-    ReactNode,
     useCallback,
+    useContext,
     useEffect,
     useRef,
-    useState
 } from 'react';
+import { feedContext } from './feed-context';
 
-import { binarySearch } from './binary-search';
-
-type Props = Omit<ComponentProps<'div'>, 'children'> & {
-  threshold: number;
-  children: (startIndex: number) => ReactNode[];
+type Props = ComponentProps<'div'> & {
   onReadHeight?: (element: HTMLElement, index: number) => number;
 }
 
@@ -21,21 +17,20 @@ const defaultReadHeight: Props['onReadHeight'] = (element) => element.clientHeig
 export const Feed: FC<Props> = (props) => {
   const {
     children,
-    threshold,
     onReadHeight = defaultReadHeight,
     ...divProps
   } = props;
 
-  const [startIndex, setStartIndex] = useState(0);
-  const offsetsRef = useRef<number[]>([]);
+  const {
+    startIndex,
+    offsetsRef,
+  } = useContext(feedContext);
+
   const itemsRef = useRef<HTMLDivElement>(null);
   const itemsSliceRef = useRef<HTMLDivElement>(null);
 
   const startIndexRef = useRef(startIndex);
   startIndexRef.current = startIndex;
-
-  const childrenRef = useRef(children);
-  childrenRef.current = children;
 
   const onReadHeightRef = useRef(onReadHeight);
   onReadHeightRef.current = onReadHeight;
@@ -63,33 +58,7 @@ export const Feed: FC<Props> = (props) => {
 
       return offsets[index];
     },
-    [],
-  );
-
-  const handleScroll = useCallback(
-    (e: React.UIEvent<HTMLDivElement>) => {
-      const {
-        scrollTop,
-      } = e.target as HTMLDivElement;
-
-      queueMicrotask(() => {
-        const offsets = offsetsRef.current;
-
-        const [, foundIndex] = binarySearch(offsets, (offset, index) => {
-          const prevOffest = offsets[index - 1] || 0;
-          const isFound = offset >= scrollTop && scrollTop > prevOffest;
-  
-          if (isFound) {
-            return 0;
-          }
-          return scrollTop - offset;
-        });
-
-        const nextStartIndex = Math.max(foundIndex - (threshold - 1), 0);
-        setStartIndex(nextStartIndex);
-      });
-    },
-    [threshold],
+    [offsetsRef],
   );
 
   useEffect(
@@ -107,7 +76,8 @@ export const Feed: FC<Props> = (props) => {
             return;
           }
           /**
-           * skip extra read height, but always read first element.
+           * Skip extra read height. 
+           * Always read first element for avoid shaking.
            */
           if (index > 0 && node.dataset.index) {
             return;
@@ -125,21 +95,28 @@ export const Feed: FC<Props> = (props) => {
         itemsSlice.style.transform = `translateY(${top}px)`;
       });
     },
-    [calcOffsets, startIndex],
+    [calcOffsets, offsetsRef, startIndex],
   );
+
+  const offsets = offsetsRef.current;
 
   return (
     <div
+      style={{
+        willChange: 'min-height',
+        minHeight: offsets[offsets.length - 1],
+      }}
       {...divProps}
-      onScroll={handleScroll}
+      ref={itemsRef}
     >
-      <div ref={itemsRef}>
-        <div 
-          ref={itemsSliceRef}
-          style={{position: 'relative'}}  
-        >
-          {childrenRef.current(startIndex)}
-        </div>
+      <div 
+        ref={itemsSliceRef}
+        style={{
+          willChange: 'transform',
+          position: 'relative', 
+        }}  
+      >
+        {children}
       </div>
     </div>
   );
