@@ -1,7 +1,6 @@
 import React, {
     ComponentProps,
     FC,
-    useCallback,
     useContext,
     useEffect,
     useRef,
@@ -13,6 +12,8 @@ type Props = ComponentProps<'div'> & {
 }
 
 const defaultReadHeight: Props['onReadHeight'] = (element) => element.clientHeight;
+const getLastOffset = (offsets: Map<number, number>): number => offsets.get(offsets.size - 1) || 0;
+const getPrevOffset = (offsets: Map<number, number>, index: number): number => offsets.get(index - 1) || 0;
 
 export const Feed: FC<Props> = (props) => {
   const {
@@ -24,6 +25,7 @@ export const Feed: FC<Props> = (props) => {
   const {
     startIndex,
     offsets,
+    setOffset,
   } = useContext(feedContext);
 
   const itemsRef = useRef<HTMLDivElement>(null);
@@ -34,32 +36,6 @@ export const Feed: FC<Props> = (props) => {
 
   const onReadHeightRef = useRef(onReadHeight);
   onReadHeightRef.current = onReadHeight;
-
-  const calcOffsets = useCallback(
-    (height: number, index: number) => {
-      const prevOffset = offsets.get(index - 1) || 0;
-      const currentOffset = offsets.get(index) || 0;
-      const newCurrentOffset = index 
-        ? height + prevOffset
-        : height;
-
-      offsets.set(index, newCurrentOffset);
-
-      // redefine offsets by diff
-      const diff = newCurrentOffset - currentOffset;
-      if (diff > 0) {
-        for (
-          let nextIndex = index + 1;
-          nextIndex < offsets.size;
-          ++nextIndex
-        ) {
-          const nextOffset = offsets.get(nextIndex) || 0;
-          offsets.set(nextIndex, nextOffset + diff)
-        }
-      }
-    },
-    [offsets],
-  );
 
   useEffect(
     () => {
@@ -85,12 +61,12 @@ export const Feed: FC<Props> = (props) => {
             const indexOfList = startIndex + index;
             node.dataset.index = String(indexOfList);
             const clientHeight = onReadHeightRef.current(node, indexOfList);
-            calcOffsets(clientHeight, indexOfList);
+            setOffset(clientHeight, indexOfList);
           });
 
           queueMicrotask(() => {
-            const lastOffset = offsets.get(offsets.size - 1) || 0;
-            const prevOffset = offsets.get(startIndex - 1) || 0;
+            const lastOffset = getLastOffset(offsets);
+            const prevOffset = getPrevOffset(offsets, startIndex);
             items.style.minHeight = `${lastOffset}px`;
             itemsSlice.style.transform = `translateY(${prevOffset}px)`;
           });
@@ -102,11 +78,11 @@ export const Feed: FC<Props> = (props) => {
         resizeObserver.disconnect();
       }
     },
-    [calcOffsets, offsets, startIndex],
+    [setOffset, offsets, startIndex],
   );
 
-  const lastOffset = offsets.get(offsets.size - 1) || 0;
-  const prevOffset = offsets.get(startIndex - 1) || 0;
+  const lastOffset = getLastOffset(offsets);
+  const prevOffset = getPrevOffset(offsets, startIndex);
 
   return (
     <div
