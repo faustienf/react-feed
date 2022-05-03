@@ -2,10 +2,11 @@ import React from 'react';
 
 import { Feed, useFeed } from './feed';
 import { useWindowEvent } from './use-window-event';
+import { Article } from './article';
 
 import './app.css';
 
-const items = Array(10000).fill(0).map((_, index) => ({
+const items = Array(100).fill(0).map((_, index) => ({
   id: index,
 }));
 
@@ -24,12 +25,9 @@ export const App = () => {
     <section className="articles">
       <Feed onReadHeight={(el) => el.offsetHeight + 10}>
         {items.slice(startIndex, startIndex + 8).map((item) => (
-          <article 
-            key={item.id}
-            className="article"
-          >
+          <Article key={item.id}>
             {item.id}
-          </article>
+          </Article>
         ))}
       </Feed>
     </section>

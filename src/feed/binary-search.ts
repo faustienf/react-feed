@@ -1,17 +1,19 @@
-export const binarySearch = <V extends any>(
-  array: V[],
-  comparator: (value: V, index: number) => number,
-): [undefined | V, number] => {
+type MapValueType<T> = T extends Map<any, infer V> ? V : never;
+
+export const binarySearch = <L extends Map<number, any>>(
+  list: L,
+  comparator: (value: MapValueType<L>, index: number) => number,
+): [undefined | MapValueType<L>, number] => {
   let start = 0;
-  let end = array.length - 1;
+  let end = list.size - 1;
 
   while (start <= end) {
     const middleIndex = Math.floor((start + end) / 2);
-    const position = comparator(array[middleIndex], middleIndex);
+    const position = comparator(list.get(middleIndex), middleIndex);
 
     // found!!!
     if (position === 0) {
-      return [array[middleIndex], middleIndex];
+      return [list.get(middleIndex), middleIndex];
     // move right
     } else if (position > 0) {
       start = middleIndex + 1;

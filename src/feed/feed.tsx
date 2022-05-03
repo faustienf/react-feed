@@ -23,7 +23,7 @@ export const Feed: FC<Props> = (props) => {
 
   const {
     startIndex,
-    offsetsRef,
+    offsets,
   } = useContext(feedContext);
 
   const itemsRef = useRef<HTMLDivElement>(null);
@@ -36,29 +36,29 @@ export const Feed: FC<Props> = (props) => {
   onReadHeightRef.current = onReadHeight;
 
   const calcOffsets = useCallback(
-    (height: number, index: number): number => {
-      const offsets = offsetsRef.current;
-      const prevOffset = offsets[index] || 0;
+    (height: number, index: number) => {
+      const prevOffset = offsets.get(index - 1) || 0;
+      const currentOffset = offsets.get(index) || 0;
+      const newCurrentOffset = index 
+        ? height + prevOffset
+        : height;
 
-      offsets[index] = index 
-          ? height + offsets[index - 1]
-          : height;
+      offsets.set(index, newCurrentOffset);
 
       // redefine offsets by diff
-      const diff = offsets[index] - prevOffset;
+      const diff = newCurrentOffset - currentOffset;
       if (diff > 0) {
         for (
           let nextIndex = index + 1;
-          nextIndex < offsets.length;
+          nextIndex < offsets.size;
           ++nextIndex
         ) {
-          offsets[nextIndex] += diff;
+          const nextOffset = offsets.get(nextIndex) || 0;
+          offsets.set(nextIndex, nextOffset + diff)
         }
       }
-
-      return offsets[index];
     },
-    [offsetsRef],
+    [offsets],
   );
 
   useEffect(
@@ -69,42 +69,50 @@ export const Feed: FC<Props> = (props) => {
         return;
       }
 
-      Array
-        .from(itemsSlice.children)
-        .forEach(async (node, index) => {
-          if (!(node instanceof HTMLElement)) {
-            return;
-          }
-          /**
-           * Skip extra read height. 
-           * Always read first element for avoid shaking.
-           */
-          if (index > 0 && node.dataset.index) {
-            return;
-          }
-          const indexOfList = startIndex + index;
-          node.dataset.index = String(indexOfList);
-          const clientHeight = onReadHeightRef.current(node, indexOfList);
-          calcOffsets(clientHeight, indexOfList);
-        });
+      const resizeObserver = new ResizeObserver(() => {
+        Array
+          .from(itemsSlice.children)
+          .forEach(async (node, index) => {
+            if (!(node instanceof HTMLElement)) {
+              return;
+            }
+            /**
+             * Skip extra read height. 
+             */
+            if (node.dataset.index) {
+              return;
+            }
+            const indexOfList = startIndex + index;
+            node.dataset.index = String(indexOfList);
+            const clientHeight = onReadHeightRef.current(node, indexOfList);
+            calcOffsets(clientHeight, indexOfList);
+          });
 
-      queueMicrotask(() => {
-        const offsets = offsetsRef.current;
-        items.style.minHeight = `${offsets[offsets.length - 1]}px`;
-        const top = offsets[startIndex] - offsets[0];
-        itemsSlice.style.transform = `translateY(${top}px)`;
+          queueMicrotask(() => {
+            const lastOffset = offsets.get(offsets.size - 1) || 0;
+            const prevOffset = offsets.get(startIndex - 1) || 0;
+            items.style.minHeight = `${lastOffset}px`;
+            itemsSlice.style.transform = `translateY(${prevOffset}px)`;
+          });
       });
+
+      resizeObserver.observe(itemsSlice);
+
+      return () => {
+        resizeObserver.disconnect();
+      }
     },
-    [calcOffsets, offsetsRef, startIndex],
+    [calcOffsets, offsets, startIndex],
   );
 
-  const offsets = offsetsRef.current;
+  const lastOffset = offsets.get(offsets.size - 1) || 0;
+  const prevOffset = offsets.get(startIndex - 1) || 0;
 
   return (
     <div
       style={{
         willChange: 'min-height',
-        minHeight: offsets[offsets.length - 1],
+        minHeight: lastOffset,
       }}
       {...divProps}
       ref={itemsRef}
@@ -113,7 +121,7 @@ export const Feed: FC<Props> = (props) => {
         ref={itemsSliceRef}
         style={{
           willChange: 'transform',
-          position: 'relative', 
+          transform: `translateY(${prevOffset}px)`,
         }}  
       >
         {children}

@@ -17,7 +17,7 @@ export const useFeed = ({thresholdItems, thresholdPx} = defaultOptions) => {
   const {
     startIndex,
     setStartIndex,
-    offsetsRef,
+    offsets,
   } = useContext(feedContext)
 
   const handleScroll = useCallback(
@@ -30,10 +30,8 @@ export const useFeed = ({thresholdItems, thresholdPx} = defaultOptions) => {
       const relativeScrollTop = scrollTop - thresholdPx;
 
       queueMicrotask(() => {
-        const offsets = offsetsRef.current;
-
         const [, foundIndex] = binarySearch(offsets, (offset, index) => {
-          const prevOffest = offsets[index - 1] || 0;
+          const prevOffest = offsets.get(index - 1) || 0;
           const isFound = offset >= relativeScrollTop && relativeScrollTop > prevOffest;
   
           if (isFound) {
@@ -46,7 +44,7 @@ export const useFeed = ({thresholdItems, thresholdPx} = defaultOptions) => {
         setStartIndex(nextStartIndex);
       });
     },
-    [thresholdPx, offsetsRef, setStartIndex, thresholdItems],
+    [thresholdPx, offsets, setStartIndex, thresholdItems],
   );
 
   return {
