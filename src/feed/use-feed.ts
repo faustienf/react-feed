@@ -18,7 +18,7 @@ export const useFeed = ({thresholdItems, thresholdPx} = defaultOptions) => {
     startIndex,
     setStartIndex,
     offsets,
-  } = useContext(feedContext)
+  } = useContext(feedContext);
 
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLElement> | Event) => {
@@ -44,7 +44,7 @@ export const useFeed = ({thresholdItems, thresholdPx} = defaultOptions) => {
         setStartIndex(nextStartIndex);
       });
     },
-    [thresholdPx, offsets, setStartIndex, thresholdItems],
+    [thresholdPx, offsets, thresholdItems, setStartIndex],
   );
 
   return {

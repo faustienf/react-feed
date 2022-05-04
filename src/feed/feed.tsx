@@ -61,22 +61,24 @@ export const Feed: FC<Props> = (props) => {
             const indexOfList = startIndex + index;
             node.dataset.index = String(indexOfList);
             const clientHeight = onReadHeightRef.current(node, indexOfList);
-            setOffset(clientHeight, indexOfList);
+            setOffset(indexOfList, clientHeight);
           });
 
           queueMicrotask(() => {
             const lastOffset = getLastOffset(offsets);
             const prevOffset = getPrevOffset(offsets, startIndex);
-            items.style.minHeight = `${lastOffset}px`;
+            const minHeight = `${lastOffset}px`;
+            if (items.style.minHeight !== minHeight) {
+              items.style.minHeight = minHeight;
+            }
             itemsSlice.style.transform = `translateY(${prevOffset}px)`;
           });
       });
 
       resizeObserver.observe(itemsSlice);
-
       return () => {
         resizeObserver.disconnect();
-      }
+      };
     },
     [setOffset, offsets, startIndex],
   );

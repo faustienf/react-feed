@@ -12,7 +12,7 @@ type Context = {
   startIndex: number,
   setStartIndex: (nextStartIndex: number) => void;
   offsets: Map<number, number>;
-  setOffset: (height: number, index: number) => void; 
+  setOffset: (index: number, height: number) => void; 
 }
 
 const defaultValue: Context = {
@@ -30,7 +30,7 @@ export const FeedProvider: FC<PropsWithChildren<{}>> = ({children}) => {
   const offsets = offsetsRef.current;
 
   const setOffset = useCallback(
-    (height: number, index: number) => {
+    (index: number, height: number) => {
       const prevOffset = offsets.get(index - 1) || 0;
       const currentOffset = offsets.get(index) || 0;
       const newCurrentOffset = index 
@@ -41,7 +41,7 @@ export const FeedProvider: FC<PropsWithChildren<{}>> = ({children}) => {
 
       // redefine offsets by diff
       const diff = newCurrentOffset - currentOffset;
-      if (diff > 0) {
+      if (diff !== 0) {
         for (
           let nextIndex = index + 1;
           nextIndex < offsets.size;
@@ -63,7 +63,7 @@ export const FeedProvider: FC<PropsWithChildren<{}>> = ({children}) => {
       setOffset,
     }),
     [offsets, setOffset, startIndex],
-  )
+  );
 
   return (
     <feedContext.Provider value={context}>

@@ -15,7 +15,7 @@ export const App = () => {
     startIndex,
     handleScroll,
   } = useFeed({
-    thresholdItems: 1,
+    thresholdItems: 2,
     thresholdPx: 300,
   });
 
