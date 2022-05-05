@@ -13,6 +13,8 @@ type Context = {
   setStartIndex: (nextStartIndex: number) => void;
   offsets: Map<number, number>;
   setOffset: (index: number, height: number) => void; 
+  getLastOffset: () => number;
+  getPrevOffset: () => number;
 }
 
 const defaultValue: Context = {
@@ -20,12 +22,17 @@ const defaultValue: Context = {
   setStartIndex: () => {},
   offsets: new Map<number, number>(),
   setOffset: () => {},
+  getLastOffset: () => 0,
+  getPrevOffset: () => 0,
 };
 
 export const feedContext = createContext(defaultValue);
 
 export const FeedProvider: FC<PropsWithChildren<{}>> = ({children}) => {
   const [startIndex, setStartIndex] = useState(0);
+  const startIndexRef = useRef(startIndex);
+  startIndexRef.current = startIndex;
+  
   const offsetsRef = useRef(new Map<number, number>());
   const offsets = offsetsRef.current;
 
@@ -55,14 +62,26 @@ export const FeedProvider: FC<PropsWithChildren<{}>> = ({children}) => {
     [offsets],
   );
 
+  const getLastOffset = useCallback(
+    () => offsets.get(offsets.size - 1) || 0,
+    [offsets],
+  );
+
+  const getPrevOffset = useCallback(
+    () => offsets.get(startIndexRef.current - 1) || 0,
+    [offsets],
+  );
+
   const context: Context = useMemo(
     () => ({
       startIndex,
       setStartIndex,
       offsets,
       setOffset,
+      getLastOffset,
+      getPrevOffset,
     }),
-    [offsets, setOffset, startIndex],
+    [getLastOffset, getPrevOffset, offsets, setOffset, startIndex],
   );
 
   return (
