@@ -5,7 +5,7 @@
   box-sizing: border-box;
   display: flex;
   background-color: #fff;
-  color: #3256A7;
+  color: var(--primary-color);
   font-size: 32px;
   line-height: 1;
   padding: 24px;

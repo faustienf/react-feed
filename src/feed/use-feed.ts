@@ -48,6 +48,7 @@ export const useFeed = ({thresholdItems, thresholdPx} = defaultOptions) => {
   );
 
   return {
+    offsets,
     startIndex,
     setStartIndex,
     handleScroll

@@ -1,13 +1,13 @@
 import React, { ComponentProps, FC } from "react";
 
-import './threshold-px.css';
+import './threshold-items.css';
 
 type Props = ComponentProps<'div'>;
 
-export const ThresholdPx: FC<Props> = (props) => {
+export const ThresholdItems: FC<Props> = (props) => {
   return (
     <div 
-      className="threshold-px"
+      className="threshold-items"
       {...props}
     />
   );

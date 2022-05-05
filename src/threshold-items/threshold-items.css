@@ -1,0 +1,36 @@
+.threshold-items {
+  position: absolute;
+  top: 300px;
+  right: 100%;
+  color: #fff;
+  border-top: 2px solid;
+  border-bottom: 2px solid;
+  width: 32px;
+  box-sizing: border-box;
+  height: 420px;
+  margin-right: 24px;
+}
+
+.threshold-items::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  height: 100%;
+  border-right: 2px solid;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+}
+
+.threshold-items::after {
+  content: 'threshold items';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  box-sizing: border-box;
+  white-space: nowrap;
+  text-transform: uppercase;
+  font-size: 20px;
+  letter-spacing: 4px;
+  line-height: 1;
+}
