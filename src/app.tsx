@@ -5,9 +5,9 @@ import { useWindowEvent } from './use-window-event';
 import { Article } from './article';
 import { ThresholdPx } from './threshold-px';
 import { ThresholdItems } from './threshold-items';
+import { useSetState } from './use-set-state';
 
 import './app.css';
-import { useSetState } from './use-set-state';
 
 const items = Array(1000).fill(0).map((_, index) => ({
   id: index,
@@ -27,18 +27,16 @@ export const App = () => {
     thresholdItems: THRESHOLD_ITEMS,
   });
 
-  useWindowEvent('scroll', handleScroll);
-
   const [collapsed, onToggle] = useSetState<number>();
+  useWindowEvent('scroll', handleScroll);
 
   const thresholdHeight = useMemo(
     () => items
       .slice(0, THRESHOLD_ITEMS)
-      .reduce(
-        (acc, item) => collapsed.has(item.id)
-          ? MARGIN_GAP + acc + item.height * 2
-          : MARGIN_GAP + acc + item.height, 
-        0),
+      .reduce((acc, item) => collapsed.has(item.id)
+        ? MARGIN_GAP + acc + item.height * 2
+        : MARGIN_GAP + acc + item.height, 
+      0),
     [collapsed],
   );
 
