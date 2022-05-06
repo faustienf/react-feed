@@ -11,7 +11,3 @@
   padding: 24px;
   cursor: pointer;
 }
-
-.article[data-collapsed="true"] {
-  min-height: 400px;
-}
