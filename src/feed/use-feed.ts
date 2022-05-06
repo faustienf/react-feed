@@ -21,7 +21,7 @@ export const useFeed = (options = defaultOptions) => {
 
   const {
     startIndex,
-    setStartIndex,
+    changeStartIndex,
     offsets,
   } = useContext(feedContext);
 
@@ -49,17 +49,17 @@ export const useFeed = (options = defaultOptions) => {
 
         const nextStartIndex = Math.max(foundIndex - (thresholdItems - 1), 0);
         startTransition(() => {
-          setStartIndex(nextStartIndex);
+          changeStartIndex(nextStartIndex);
         });
       });
     },
-    [thresholdPx, offsets, thresholdItems, setStartIndex],
+    [thresholdPx, offsets, thresholdItems, changeStartIndex],
   );
 
   return {
     offsets,
     startIndex,
-    setStartIndex,
+    changeStartIndex,
     handleScroll
   };
 };

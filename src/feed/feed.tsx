@@ -6,10 +6,10 @@ import React, {
     useEffect,
     useRef,
 } from 'react';
-import { useLayoutEffect } from 'react';
 import { useMemo } from 'react';
 import { feedContext } from './feed-context';
-import { useResizeObserver } from './use-resize-observer';
+
+const DELAY_MACROTASK_HEIGHT = 0;
 
 type Props = ComponentProps<'div'> & {
   onReadHeight?: (element: HTMLElement, index: number) => number;
@@ -32,53 +32,46 @@ export const Feed: FC<Props> = (props) => {
   const {
     startIndex,
     offsets,
-    setOffset,
+    changeOffset,
     getLastOffset,
-    getPrevOffset,
   } = useContext(feedContext);
 
   const itemsRef = useRef<HTMLDivElement>(null);
   const itemsSliceRef = useRef<HTMLDivElement>(null);
   const shownItems = useRef(new Set<number>());
 
+  const itemsHeightRef = useRef(getLastOffset());
+
+  const startIndexRef = useRef(startIndex);
+  startIndexRef.current = startIndex;
+
   const onReadHeightRef = useRef(onReadHeight);
   onReadHeightRef.current = onReadHeight;
 
-  const updateOffset = useCallback(
+  const changeElementOffset = useCallback(
     (element: HTMLElement, index: number) => {
       const clientHeight = onReadHeightRef.current(element, index);
-      setOffset(index, clientHeight);
+      changeOffset(index, clientHeight);
       shownItems.current.add(index);
     },
-    [setOffset],
+    [changeOffset],
   );
 
-  const updateRootStyles = useCallback(
+  const updateHeight = useCallback(
     () => {
       const items = itemsRef.current;
       if (!items) {
         return;
       }
       const lastOffset = getLastOffset();
-      const minHeight = `${lastOffset}px`;
-      if (items.style.minHeight !== minHeight) {
+      if (itemsHeightRef.current !== lastOffset) {
+        const minHeight = `${lastOffset}px`;
         items.style.minHeight = minHeight;
+        itemsHeightRef.current = lastOffset;
       }
     },
     [getLastOffset],
   );
-
-  const observer = useResizeObserver(([entry]) => {
-    Array
-      .from(entry.target.children)
-      .forEach((node, index) => {
-        if (!(node instanceof HTMLElement)) {
-          return;
-        }
-        const indexOfList = startIndex + index;
-        updateOffset(node, indexOfList);
-      });
-  });
 
   useEffect(
     () => {
@@ -87,31 +80,34 @@ export const Feed: FC<Props> = (props) => {
         return () => {};
       }
 
+      const observer = new ResizeObserver(([entry]) => {
+        Array
+          .from(entry.target.children)
+          .forEach((node, index) => {
+            if (!(node instanceof HTMLElement)) {
+              return;
+            }
+            const indexOfList = startIndexRef.current + index;
+            changeElementOffset(node, indexOfList);
+          });
+      });
+
       observer.observe(itemsSlice);
       const stopTask = queueMacrotask(() => {
-        updateRootStyles();
-      }, 100);
+        updateHeight();
+      }, DELAY_MACROTASK_HEIGHT);
 
       return () => {
         observer.disconnect();
         stopTask();
       };
     },
-    [observer, updateRootStyles],
+    [updateHeight, changeElementOffset],
   );
 
-  useLayoutEffect(
-    () => {
-      const itemsSlice = itemsSliceRef.current;
-      if (!itemsSlice) {
-        return;
-      }
-      const prevOffset = offsets.get(startIndex - 1) || 0;
-      itemsSlice.style.transform = `translateY(${prevOffset}px)`;
-    },
-    [offsets, startIndex],
-  );
-
+  /**
+   * Recalculate offsets, update root height
+   */
   useEffect(
     () => {
       const itemsSlice = itemsSliceRef.current;
@@ -128,39 +124,40 @@ export const Feed: FC<Props> = (props) => {
 
           const indexOfList = startIndex + index;
           if (shownItems.current.has(indexOfList)) {
-            /**
-             * Skip extra read height. 
-             */
+            // Skip extra read height
             return;
           }
-          updateOffset(node, indexOfList);
+          changeElementOffset(node, indexOfList);
         });
 
       const stopTask = queueMacrotask(() => {
-        updateRootStyles();
-      }, 100);
+        updateHeight();
+      }, DELAY_MACROTASK_HEIGHT);
 
       return () => {
         stopTask();
       };
     },
-    [startIndex, updateOffset, updateRootStyles],
+    [startIndex, changeElementOffset, updateHeight],
   );
 
   const rootStyle = useMemo(
     () => ({
       willChange: 'min-height',
-      minHeight: getLastOffset(),
+      minHeight: itemsHeightRef.current,
     }),
-    [getLastOffset],
+    [],
   );
 
   const sliceStyle = useMemo(
-    () => ({
-      willChange: 'transform',
-      transform: `translateY(${getPrevOffset()}px)`,
-    }),
-    [getPrevOffset],
+    () => {
+      const prevOffset = offsets.get(startIndex - 1) || 0;
+      return {
+        willChange: 'transform',
+        transform: `translateY(${prevOffset}px)`,
+      };
+    },
+    [offsets, startIndex],
   );
 
   return (

@@ -8,7 +8,7 @@ import { ThresholdItems } from './threshold-items';
 
 import './app.css';
 
-const items = Array(100).fill(0).map((_, index) => ({
+const items = Array(1000).fill(0).map((_, index) => ({
   id: index,
   height: 100 + Math.floor(Math.random() * 150),
 }));
