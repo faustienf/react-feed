@@ -10,11 +10,11 @@ import './app.css';
 
 const items = Array(1000).fill(0).map((_, index) => ({
   id: index,
-  height: 100 + Math.floor(Math.random() * 150),
+  height: 100 + Math.round(Math.random() * 150),
 }));
 
 const THRESHOLD_PX = 300;
-const THRESHOLD_ITEMS = 1;
+const THRESHOLD_ITEMS = 2;
 
 export const App = () => {
   const {
@@ -38,7 +38,7 @@ export const App = () => {
       />
 
       <Feed onReadHeight={(el) => el.offsetHeight + 16}>
-        {items.slice(startIndex, startIndex + 8).map((item) => (
+        {items.slice(startIndex, startIndex + 10).map((item) => (
           <Article 
             key={item.id}
             style={{height: item.height}}
