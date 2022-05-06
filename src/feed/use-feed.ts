@@ -1,4 +1,4 @@
-import { useCallback, useContext } from "react";
+import { useCallback, useContext, useTransition } from "react";
 
 import { feedContext } from "./feed-context";
 import { binarySearch } from "./binary-search";
@@ -9,16 +9,23 @@ type Options = {
 }
 
 const defaultOptions: Options = {
-  thresholdItems: 0,
+  thresholdItems: 1,
   thresholdPx: 0
 };
 
-export const useFeed = ({thresholdItems, thresholdPx} = defaultOptions) => {
+export const useFeed = (options = defaultOptions) => {
+  const {
+    thresholdItems = defaultOptions.thresholdItems,
+    thresholdPx = defaultOptions.thresholdPx
+  } = options;
+
   const {
     startIndex,
     setStartIndex,
     offsets,
   } = useContext(feedContext);
+
+  const [, startTransition] = useTransition();
 
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLElement> | Event) => {
@@ -41,7 +48,9 @@ export const useFeed = ({thresholdItems, thresholdPx} = defaultOptions) => {
         });
 
         const nextStartIndex = Math.max(foundIndex - (thresholdItems - 1), 0);
-        setStartIndex(nextStartIndex);
+        startTransition(() => {
+          setStartIndex(nextStartIndex);
+        });
       });
     },
     [thresholdPx, offsets, thresholdItems, setStartIndex],

@@ -6,6 +6,7 @@ import React, {
     useEffect,
     useRef,
 } from 'react';
+import { useMemo } from 'react';
 import { feedContext } from './feed-context';
 import { useResizeObserver } from './use-resize-observer';
 
@@ -32,20 +33,21 @@ export const Feed: FC<Props> = (props) => {
 
   const itemsRef = useRef<HTMLDivElement>(null);
   const itemsSliceRef = useRef<HTMLDivElement>(null);
+  const shownItems = useRef(new Set<number>());
 
   const onReadHeightRef = useRef(onReadHeight);
   onReadHeightRef.current = onReadHeight;
 
   const updateOffset = useCallback(
-    (element: HTMLElement, indexOfList: number) => {
-      element.dataset.index = String(indexOfList);
-      const clientHeight = onReadHeightRef.current(element, indexOfList);
-      setOffset(indexOfList, clientHeight);
+    (element: HTMLElement, index: number) => {
+      const clientHeight = onReadHeightRef.current(element, index);
+      setOffset(index, clientHeight);
+      shownItems.current.add(index);
     },
     [setOffset],
   );
 
-  const updateFeedHeight = useCallback(
+  const updateStyles = useCallback(
     () => {
       const items = itemsRef.current;
       const itemsSlice = itemsSliceRef.current;
@@ -67,7 +69,7 @@ export const Feed: FC<Props> = (props) => {
   const observer = useResizeObserver(([entry]) => {
     Array
       .from(entry.target.children)
-      .forEach((node, index) => {
+      .forEach(async (node, index) => {
         if (!(node instanceof HTMLElement)) {
           return;
         }
@@ -75,7 +77,9 @@ export const Feed: FC<Props> = (props) => {
         updateOffset(node, indexOfList);
       });
 
-    updateFeedHeight();
+    queueMicrotask(() => {
+      updateStyles();
+    });
   });
 
   useEffect(
@@ -100,43 +104,52 @@ export const Feed: FC<Props> = (props) => {
 
       Array
         .from(itemsSlice.children)
-        .forEach((node, index) => {
+        .forEach(async (node, index) => {
           if (!(node instanceof HTMLElement)) {
             return;
           }
-          /**
-           * Skip extra read height. 
-           */
-          if (node.dataset.index) {
+          const indexOfList = startIndex + index;
+          if (shownItems.current.has(indexOfList)) {
+            /**
+             * Skip extra read height. 
+             */
             return;
           }
-          const indexOfList = startIndex + index;
-          updateOffset(node, indexOfList);
+          queueMicrotask(() => {
+            updateOffset(node, indexOfList);
+          });
         });
 
-        updateFeedHeight();
+        updateStyles();
     },
-    [setOffset, offsets, startIndex, observer, updateFeedHeight, updateOffset],
+    [setOffset, offsets, startIndex, observer, updateStyles, updateOffset],
   );
 
-  const lastOffset = getLastOffset();
-  const prevOffset = getPrevOffset();
+  const rootStyle = useMemo(
+    () => ({
+      willChange: 'min-height',
+      minHeight: getLastOffset(),
+    }),
+    [getLastOffset],
+  );
+
+  const sliceStyle = useMemo(
+    () => ({
+      willChange: 'transform',
+      transform: `translateY(${getPrevOffset()}px)`,
+    }),
+    [getPrevOffset],
+  );
 
   return (
     <div
-      style={{
-        willChange: 'min-height',
-        minHeight: lastOffset,
-      }}
+      style={rootStyle}
       {...divProps}
       ref={itemsRef}
     >
       <div 
         ref={itemsSliceRef}
-        style={{
-          willChange: 'transform',
-          transform: `translateY(${prevOffset}px)`,
-        }}  
+        style={sliceStyle}  
       >
         {children}
       </div>

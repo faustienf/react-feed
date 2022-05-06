@@ -18,6 +18,7 @@ const THRESHOLD_ITEMS = 2;
 export const App = () => {
   const {
     startIndex,
+    offsets,
     handleScroll,
   } = useFeed({
     thresholdPx: THRESHOLD_PX,
@@ -28,12 +29,18 @@ export const App = () => {
 
   return (
     <section className="articles">
-      <ThresholdPx style={{height: THRESHOLD_PX - 48}} />
-      <ThresholdItems style={{top: THRESHOLD_PX, height: THRESHOLD_ITEMS * 216}} />
+      <ThresholdPx
+        style={{height: THRESHOLD_PX - 48}}
+      />
+      <ThresholdItems
+        style={{top: THRESHOLD_PX, height: offsets.get(THRESHOLD_ITEMS - 1)}}
+      />
 
       <Feed onReadHeight={(el) => el.offsetHeight + 16}>
         {items.slice(startIndex, startIndex + 8).map((item) => (
-          <Article key={item.id}>
+          <Article 
+            key={item.id}
+          >
             {item.id}
           </Article>
         ))}
