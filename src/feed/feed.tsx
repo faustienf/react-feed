@@ -6,6 +6,7 @@ import React, {
     useEffect,
     useRef,
 } from 'react';
+import { useLayoutEffect } from 'react';
 import { useMemo } from 'react';
 import { feedContext } from './feed-context';
 import { useResizeObserver } from './use-resize-observer';
@@ -15,6 +16,11 @@ type Props = ComponentProps<'div'> & {
 }
 
 const defaultReadHeight: Props['onReadHeight'] = (element) => element.clientHeight;
+
+const queueMacrotask = (fn: () => void, delayMs: number): () => void => {
+  let timerId = setTimeout(fn, delayMs);
+  return () => clearTimeout(timerId);
+};
 
 export const Feed: FC<Props> = (props) => {
   const {
@@ -47,39 +53,31 @@ export const Feed: FC<Props> = (props) => {
     [setOffset],
   );
 
-  const updateStyles = useCallback(
+  const updateRootStyles = useCallback(
     () => {
       const items = itemsRef.current;
-      const itemsSlice = itemsSliceRef.current;
-      if (!items || !itemsSlice) {
+      if (!items) {
         return;
       }
-      
       const lastOffset = getLastOffset();
-      const prevOffset = getPrevOffset();
       const minHeight = `${lastOffset}px`;
       if (items.style.minHeight !== minHeight) {
         items.style.minHeight = minHeight;
       }
-      itemsSlice.style.transform = `translateY(${prevOffset}px)`;
     },
-    [getLastOffset, getPrevOffset],
+    [getLastOffset],
   );
 
   const observer = useResizeObserver(([entry]) => {
     Array
       .from(entry.target.children)
-      .forEach(async (node, index) => {
+      .forEach((node, index) => {
         if (!(node instanceof HTMLElement)) {
           return;
         }
         const indexOfList = startIndex + index;
         updateOffset(node, indexOfList);
       });
-
-    queueMicrotask(() => {
-      updateStyles();
-    });
   });
 
   useEffect(
@@ -88,26 +86,46 @@ export const Feed: FC<Props> = (props) => {
       if (!itemsSlice) {
         return () => {};
       }
+
       observer.observe(itemsSlice);
-      return () => observer.disconnect();
+      const stopTask = queueMacrotask(() => {
+        updateRootStyles();
+      }, 100);
+
+      return () => {
+        observer.disconnect();
+        stopTask();
+      };
     },
-    [observer],
+    [observer, updateRootStyles],
+  );
+
+  useLayoutEffect(
+    () => {
+      const itemsSlice = itemsSliceRef.current;
+      if (!itemsSlice) {
+        return;
+      }
+      const prevOffset = offsets.get(startIndex - 1) || 0;
+      itemsSlice.style.transform = `translateY(${prevOffset}px)`;
+    },
+    [offsets, startIndex],
   );
 
   useEffect(
     () => {
-      const items = itemsRef.current;
       const itemsSlice = itemsSliceRef.current;
-      if (!items || !itemsSlice) {
+      if (!itemsSlice) {
         return;
       }
 
       Array
         .from(itemsSlice.children)
-        .forEach(async (node, index) => {
+        .forEach((node, index) => {
           if (!(node instanceof HTMLElement)) {
             return;
           }
+
           const indexOfList = startIndex + index;
           if (shownItems.current.has(indexOfList)) {
             /**
@@ -115,14 +133,18 @@ export const Feed: FC<Props> = (props) => {
              */
             return;
           }
-          queueMicrotask(() => {
-            updateOffset(node, indexOfList);
-          });
+          updateOffset(node, indexOfList);
         });
 
-        updateStyles();
+      const stopTask = queueMacrotask(() => {
+        updateRootStyles();
+      }, 100);
+
+      return () => {
+        stopTask();
+      };
     },
-    [setOffset, offsets, startIndex, observer, updateStyles, updateOffset],
+    [startIndex, updateOffset, updateRootStyles],
   );
 
   const rootStyle = useMemo(
