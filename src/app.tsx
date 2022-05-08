@@ -15,6 +15,7 @@ const items = Array(100000).fill(0).map((_, index) => ({
 
 const THRESHOLD_PX = 300;
 const THRESHOLD_ITEMS = 2;
+const DISPLAY_ITEMS = 10;
 const MARGIN_GAP = 16;
 
 export const App = () => {
@@ -41,13 +42,13 @@ export const App = () => {
       />
 
       <Feed
-        thresholdPx={THRESHOLD_PX}
         thresholdItems={THRESHOLD_ITEMS}
         startIndex={startIndex}
         onChangeStartIndex={onChangeStartIndex}
-        onReadHeight={(el) => el.offsetHeight + MARGIN_GAP}
+        onReadHeight={(item) => item.offsetHeight + MARGIN_GAP}
+        onReadScrollTop={(items) => Math.max(items.getBoundingClientRect().top * -1, 0)}
       >
-        {items.slice(startIndex, startIndex + 10).map((item) => (
+        {items.slice(startIndex, startIndex + DISPLAY_ITEMS).map((item) => (
           <Article 
             key={item.id}
             style={{height: collapsed.has(item.id) 

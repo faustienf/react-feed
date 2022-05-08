@@ -8,14 +8,15 @@ import { useMemo } from 'react';
 import { binarySearch } from './binary-search';
 import { useEvent } from './use-event';
 import { useOffsets } from './use-offsets';
+import { usePrevious } from './use-previous';
 import { useRaf } from './use-raf';
 
 type Props = ComponentProps<'div'> & {
   startIndex: number;
   onChangeStartIndex: (nextStartIndex: number) => void;
-  thresholdPx?: number;
   thresholdItems?: number;
   onReadHeight?: (element: HTMLElement, index: number) => number;
+  onReadScrollTop: (element: HTMLElement) => number;
 }
 
 const defaultReadHeight: Props['onReadHeight'] = (element) => element.clientHeight;
@@ -25,13 +26,14 @@ export const Feed: FC<Props> = (props) => {
     children,
     startIndex,
     onChangeStartIndex,
-    thresholdPx = 0,
     thresholdItems = 1,
     onReadHeight = defaultReadHeight,
+    onReadScrollTop,
     ...divProps
   } = props;
 
   const [offsets, changeOffset] = useOffsets();
+  const onPrevious = usePrevious(-1);
   const itemsRef = useRef<HTMLDivElement>(null);
 
   const changeElementOffset = useEvent((element: HTMLElement, index: number) => {
@@ -58,8 +60,6 @@ export const Feed: FC<Props> = (props) => {
     onChangeStartIndex(nextStartIndex);
   });
 
-  const prevScrollTopRef = useRef(-1);
-
   useRaf(() => {
     const items = itemsRef.current;
     if (!items) {
@@ -77,16 +77,11 @@ export const Feed: FC<Props> = (props) => {
         changeElementOffset(node, indexOfList);
       });
 
-    // FIX ME
-    const target = document.documentElement;
-    const {scrollTop} = target;
-
-    const prevScrollTop = prevScrollTopRef.current;
-    prevScrollTopRef.current = scrollTop;
+    const scrollTop = onReadScrollTop(items);
+    const prevScrollTop = onPrevious(scrollTop);
 
     if (prevScrollTop !== scrollTop) {
-      const relativeScrollTop = scrollTop - thresholdPx;
-      onScroll(relativeScrollTop);
+      onScroll(scrollTop);
     }
   });
 
