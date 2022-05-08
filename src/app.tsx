@@ -1,7 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 
-import { Feed, useFeed } from './feed';
-import { useWindowEvent } from './use-window-event';
+import { Feed } from './feed';
 import { Article } from './article';
 import { ThresholdPx } from './threshold-px';
 import { ThresholdItems } from './threshold-items';
@@ -9,7 +8,7 @@ import { useSetState } from './use-set-state';
 
 import './app.css';
 
-const items = Array(1000).fill(0).map((_, index) => ({
+const items = Array(100000).fill(0).map((_, index) => ({
   id: index,
   height: 100 + Math.round(Math.random() * 150),
 }));
@@ -19,16 +18,8 @@ const THRESHOLD_ITEMS = 2;
 const MARGIN_GAP = 16;
 
 export const App = () => {
-  const {
-    startIndex,
-    handleScroll,
-  } = useFeed({
-    thresholdPx: THRESHOLD_PX,
-    thresholdItems: THRESHOLD_ITEMS,
-  });
-
+  const [startIndex, onChangeStartIndex] = useState(0);
   const [collapsed, onToggle] = useSetState<number>();
-  useWindowEvent('scroll', handleScroll);
 
   const thresholdHeight = useMemo(
     () => items
@@ -49,7 +40,13 @@ export const App = () => {
         style={{top: THRESHOLD_PX, height: thresholdHeight}}
       />
 
-      <Feed onReadHeight={(el) => el.offsetHeight + MARGIN_GAP}>
+      <Feed
+        thresholdPx={THRESHOLD_PX}
+        thresholdItems={THRESHOLD_ITEMS}
+        startIndex={startIndex}
+        onChangeStartIndex={onChangeStartIndex}
+        onReadHeight={(el) => el.offsetHeight + MARGIN_GAP}
+      >
         {items.slice(startIndex, startIndex + 10).map((item) => (
           <Article 
             key={item.id}

@@ -1,15 +1,20 @@
 import React, {
     ComponentProps,
+    CSSProperties,
     FC,
-    useCallback,
-    useContext,
-    useEffect,
     useRef,
 } from 'react';
 import { useMemo } from 'react';
-import { feedContext } from './feed-context';
+import { binarySearch } from './binary-search';
+import { useEvent } from './use-event';
+import { useOffsets } from './use-offsets';
+import { useRaf } from './use-raf';
 
 type Props = ComponentProps<'div'> & {
+  startIndex: number;
+  onChangeStartIndex: (nextStartIndex: number) => void;
+  thresholdPx?: number;
+  thresholdItems?: number;
   onReadHeight?: (element: HTMLElement, index: number) => number;
 }
 
@@ -18,143 +23,94 @@ const defaultReadHeight: Props['onReadHeight'] = (element) => element.clientHeig
 export const Feed: FC<Props> = (props) => {
   const {
     children,
+    startIndex,
+    onChangeStartIndex,
+    thresholdPx = 0,
+    thresholdItems = 1,
     onReadHeight = defaultReadHeight,
     ...divProps
   } = props;
 
-  const {
-    startIndex,
-    changeOffset,
-    getLastOffset,
-    getPrevOffset,
-  } = useContext(feedContext);
-
+  const [offsets, changeOffset] = useOffsets();
   const itemsRef = useRef<HTMLDivElement>(null);
-  const itemsSliceRef = useRef<HTMLDivElement>(null);
-  const shownItems = useRef(new Set<number>());
 
-  const onReadHeightRef = useRef(onReadHeight);
-  onReadHeightRef.current = onReadHeight;
+  const changeElementOffset = useEvent((element: HTMLElement, index: number) => {
+    const clientHeight = onReadHeight(element, index);
+    changeOffset(index, clientHeight);
+  });
 
-  const changeElementOffset = useCallback(
-    (element: HTMLElement, index: number) => {
-      const clientHeight = onReadHeightRef.current(element, index);
-      changeOffset(index, clientHeight);
-      shownItems.current.add(index);
-    },
-    [changeOffset],
-  );
+  const onScroll = useEvent((scrollTop: number) => {
+    const [, foundIndex] = binarySearch(offsets, (offset, index) => {
+      const prevOffest = offsets.get(index - 1) || 0;
+      const isFound = offset >= scrollTop && scrollTop > prevOffest;
 
-  const updateHeight = useCallback(
-    () => {
-      const items = itemsRef.current;
-      if (!items) {
-        return;
+      if (isFound) {
+        return 0;
       }
-      const lastOffset = getLastOffset();
-      const minHeight = `${lastOffset}px`;
-      if (items.style.minHeight !== minHeight) {
-        items.style.minHeight = minHeight;
-      }
-    },
-    [getLastOffset],
-  );
+      return scrollTop - offset;
+    });
 
-  useEffect(
-    () => {
-      const itemsSlice = itemsSliceRef.current;
-      if (!itemsSlice) {
-        return () => {};
-      }
+    const index = foundIndex < 0 
+      ? startIndex
+      : foundIndex;
 
-      let inited = false;
-      const observer = new ResizeObserver(([entry]) => {
-        if (!inited) {
-          // skip initial call
-          inited = true;
+    const nextStartIndex = Math.max(index - (thresholdItems - 1), 0);
+    onChangeStartIndex(nextStartIndex);
+  });
+
+  const prevScrollTopRef = useRef(-1);
+
+  useRaf(() => {
+    const items = itemsRef.current;
+    if (!items) {
+      return;
+    }
+
+    Array
+      .from(items.children)
+      .forEach((node, index) => {
+        if (!(node instanceof HTMLElement)) {
           return;
         }
 
-        Array
-          .from(entry.target.children)
-          .forEach((node, index) => {
-            if (!(node instanceof HTMLElement)) {
-              return;
-            }
-            const indexOfList = startIndex + index;
-            changeElementOffset(node, indexOfList);
-          });
-
-        updateHeight();
+        const indexOfList = startIndex + index;
+        changeElementOffset(node, indexOfList);
       });
 
-      observer.observe(itemsSlice);
-      return () => {
-        observer.disconnect();
-      };
-    },
-    [updateHeight, changeElementOffset, startIndex],
-  );
+    // FIX ME
+    const target = document.documentElement;
+    const {scrollTop} = target;
 
-  /**
-   * Recalculate offsets, update root height
-   */
-  useEffect(
-    () => {
-      const itemsSlice = itemsSliceRef.current;
-      if (!itemsSlice) {
-        return;
-      }
+    const prevScrollTop = prevScrollTopRef.current;
+    prevScrollTopRef.current = scrollTop;
 
-      Array
-        .from(itemsSlice.children)
-        .forEach((node, index) => {
-          if (!(node instanceof HTMLElement)) {
-            return;
-          }
+    if (prevScrollTop !== scrollTop) {
+      const relativeScrollTop = scrollTop - thresholdPx;
+      onScroll(relativeScrollTop);
+    }
+  });
 
-          const indexOfList = startIndex + index;
-          if (shownItems.current.has(indexOfList)) {
-            // Skip extra read height
-            return;
-          }
-          changeElementOffset(node, indexOfList);
-        });
-    },
-    [startIndex, changeElementOffset, updateHeight],
-  );
+  const lastOffset = offsets.get(offsets.size - 1) || 0;
+  const prevOffset = offsets.get(startIndex - 1) || 0;
 
-  const lastOffset = getLastOffset();
-  const prevOffset = getPrevOffset();
-
-  const rootStyle = useMemo(
+  const style: CSSProperties = useMemo(
     () => ({
-      willChange: 'min-height',
-      minHeight: `${lastOffset}px`,
+      willChange: 'min-height, padding-top',
+      transform: 'translateZ(0)',
+      boxSizing: 'border-box',
+      minHeight: lastOffset,
+      paddingTop: prevOffset,
     }),
-    [lastOffset],
-  );
-
-  const sliceStyle = useMemo(
-    () => ({
-      willChange: 'transform',
-      transform: `translateY(${prevOffset}px)`,
-    }),
-    [prevOffset],
+    [lastOffset, prevOffset],
   );
 
   return (
     <div
-      style={rootStyle}
       {...divProps}
+      style={style}
       ref={itemsRef}
     >
-      <div 
-        ref={itemsSliceRef}
-        style={sliceStyle}  
-      >
-        {children}
-      </div>
+      {children}
     </div>
   );
 };
