@@ -19,7 +19,7 @@ const DISPLAY_ITEMS = 10;
 const MARGIN_GAP = 16;
 
 export const App = () => {
-  const [startIndex, onChangeStartIndex] = useState(0);
+  const [startIndex, setStartIndex] = useState(0);
   const [collapsed, onToggle] = useSetState<number>();
 
   const thresholdHeight = useMemo(
@@ -42,11 +42,10 @@ export const App = () => {
       />
 
       <Feed
-        thresholdItems={THRESHOLD_ITEMS}
         startIndex={startIndex}
-        onChangeStartIndex={onChangeStartIndex}
         onReadHeight={(item) => item.offsetHeight + MARGIN_GAP}
         onReadScrollTop={(items) => Math.max(items.getBoundingClientRect().top * -1, 0)}
+        onChangeStartIndex={(nextStartIndex) => setStartIndex(Math.max(nextStartIndex - (THRESHOLD_ITEMS - 1), 0))}
       >
         {items.slice(startIndex, startIndex + DISPLAY_ITEMS).map((item) => (
           <Article 

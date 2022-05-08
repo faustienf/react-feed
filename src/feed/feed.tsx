@@ -14,7 +14,6 @@ import { useRaf } from './use-raf';
 type Props = ComponentProps<'div'> & {
   startIndex: number;
   onChangeStartIndex: (nextStartIndex: number) => void;
-  thresholdItems?: number;
   onReadHeight?: (element: HTMLElement, index: number) => number;
   onReadScrollTop: (element: HTMLElement) => number;
 }
@@ -26,7 +25,6 @@ export const Feed: FC<Props> = (props) => {
     children,
     startIndex,
     onChangeStartIndex,
-    thresholdItems = 1,
     onReadHeight = defaultReadHeight,
     onReadScrollTop,
     ...divProps
@@ -56,7 +54,7 @@ export const Feed: FC<Props> = (props) => {
       ? startIndex
       : foundIndex;
 
-    const nextStartIndex = Math.max(index - (thresholdItems - 1), 0);
+    const nextStartIndex = Math.max(index, 0);
     onChangeStartIndex(nextStartIndex);
   });
 
