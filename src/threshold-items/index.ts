@@ -1,1 +1,1 @@
-export {ThresholdItems} from './threshold-items';
+export { ThresholdItems } from './threshold-items';

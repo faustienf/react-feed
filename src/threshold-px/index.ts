@@ -1,1 +1,1 @@
-export {ThresholdPx} from './threshold-px';
+export { ThresholdPx } from './threshold-px';

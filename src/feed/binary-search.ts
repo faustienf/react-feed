@@ -11,14 +11,16 @@ export const binarySearch = <L extends Map<number, any>>(
     const middleIndex = Math.floor((start + end) / 2);
     const position = comparator(list.get(middleIndex), middleIndex);
 
-    // found!!!
+    // Found!!!
     if (position === 0) {
-      return [list.get(middleIndex), middleIndex];
-    // move right
-    } else if (position > 0) {
+      return [list.get(middleIndex) as MapValueType<L>, middleIndex];
+    }
+
+    if (position > 0) {
+      // Move right
       start = middleIndex + 1;
-    // move left
     } else {
+      // Move left
       end = middleIndex - 1;
     }
   }

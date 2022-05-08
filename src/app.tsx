@@ -25,34 +25,47 @@ export const App = () => {
   const thresholdHeight = useMemo(
     () => items
       .slice(0, THRESHOLD_ITEMS)
-      .reduce((acc, item) => collapsed.has(item.id)
-        ? MARGIN_GAP + acc + item.height * 2
-        : MARGIN_GAP + acc + item.height, 
-      0),
+      .reduce(
+        (acc, item) => (collapsed.has(item.id)
+          ? MARGIN_GAP + acc + item.height * 2
+          : MARGIN_GAP + acc + item.height),
+        0,
+      ),
     [collapsed],
   );
+
+  const onReadHeight = (itemEl: HTMLElement) => itemEl.offsetHeight + MARGIN_GAP;
+
+  const onReadScrollTop = (itemsEl: HTMLElement) => {
+    return Math.max(-1 * itemsEl.getBoundingClientRect().top, 0);
+  };
+
+  const onChangeStartIndex = (nextStartIndex: number) => {
+    setStartIndex(Math.max(nextStartIndex - (THRESHOLD_ITEMS - 1), 0));
+  };
 
   return (
     <section className="articles">
       <ThresholdPx
-        style={{height: THRESHOLD_PX - 48}}
+        style={{ height: THRESHOLD_PX - 48 }}
       />
       <ThresholdItems
-        style={{top: THRESHOLD_PX, height: thresholdHeight}}
+        style={{ top: THRESHOLD_PX, height: thresholdHeight }}
       />
 
       <Feed
         startIndex={startIndex}
-        onReadHeight={(item) => item.offsetHeight + MARGIN_GAP}
-        onReadScrollTop={(items) => Math.max(items.getBoundingClientRect().top * -1, 0)}
-        onChangeStartIndex={(nextStartIndex) => setStartIndex(Math.max(nextStartIndex - (THRESHOLD_ITEMS - 1), 0))}
+        onReadHeight={onReadHeight}
+        onReadScrollTop={onReadScrollTop}
+        onChangeStartIndex={onChangeStartIndex}
       >
         {items.slice(startIndex, startIndex + DISPLAY_ITEMS).map((item) => (
-          <Article 
+          <Article
             key={item.id}
-            style={{height: collapsed.has(item.id) 
-              ? item.height * 2
-              : item.height
+            style={{
+              height: collapsed.has(item.id)
+                ? item.height * 2
+                : item.height,
             }}
             onClick={() => onToggle(item.id)}
           >

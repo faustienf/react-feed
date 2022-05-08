@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react';
 
 export const useRaf = <F extends () => void>(callback: F) => {
   const ref = useRef(callback);

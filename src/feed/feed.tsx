@@ -1,10 +1,11 @@
 import React, {
-    ComponentProps,
-    CSSProperties,
-    FC,
-    useRef,
+  ComponentProps,
+  CSSProperties,
+  FC,
+  useRef,
+  useMemo,
 } from 'react';
-import { useMemo } from 'react';
+
 import { binarySearch } from './binary-search';
 import { useEvent } from './use-event';
 import { useOffsets } from './use-offsets';
@@ -14,18 +15,16 @@ import { useRaf } from './use-raf';
 type Props = ComponentProps<'div'> & {
   startIndex: number;
   onChangeStartIndex: (nextStartIndex: number) => void;
-  onReadHeight?: (element: HTMLElement, index: number) => number;
+  onReadHeight: (element: HTMLElement, index: number) => number;
   onReadScrollTop: (element: HTMLElement) => number;
-}
-
-const defaultReadHeight: Props['onReadHeight'] = (element) => element.clientHeight;
+};
 
 export const Feed: FC<Props> = (props) => {
   const {
     children,
     startIndex,
     onChangeStartIndex,
-    onReadHeight = defaultReadHeight,
+    onReadHeight,
     onReadScrollTop,
     ...divProps
   } = props;
@@ -41,16 +40,17 @@ export const Feed: FC<Props> = (props) => {
 
   const onScroll = useEvent((scrollTop: number) => {
     const [, foundIndex] = binarySearch(offsets, (offset, index) => {
-      const prevOffest = offsets.get(index - 1) || 0;
-      const isFound = offset >= scrollTop && scrollTop > prevOffest;
+      const previousOffest = offsets.get(index - 1) || 0;
+      const isFound = offset >= scrollTop && scrollTop > previousOffest;
 
       if (isFound) {
         return 0;
       }
+
       return scrollTop - offset;
     });
 
-    const index = foundIndex < 0 
+    const index = foundIndex < 0
       ? startIndex
       : foundIndex;
 
@@ -64,27 +64,25 @@ export const Feed: FC<Props> = (props) => {
       return;
     }
 
-    Array
-      .from(items.children)
-      .forEach((node, index) => {
-        if (!(node instanceof HTMLElement)) {
-          return;
-        }
+    Array.from(items.children).forEach((node, index) => {
+      if (!(node instanceof HTMLElement)) {
+        return;
+      }
 
-        const indexOfList = startIndex + index;
-        changeElementOffset(node, indexOfList);
-      });
+      const indexOfList = startIndex + index;
+      changeElementOffset(node, indexOfList);
+    });
 
     const scrollTop = onReadScrollTop(items);
-    const prevScrollTop = onPrevious(scrollTop);
+    const previousScrollTop = onPrevious(scrollTop);
 
-    if (prevScrollTop !== scrollTop) {
+    if (previousScrollTop !== scrollTop) {
       onScroll(scrollTop);
     }
   });
 
   const lastOffset = offsets.get(offsets.size - 1) || 0;
-  const prevOffset = offsets.get(startIndex - 1) || 0;
+  const previousOffset = offsets.get(startIndex - 1) || 0;
 
   const style: CSSProperties = useMemo(
     () => ({
@@ -92,9 +90,9 @@ export const Feed: FC<Props> = (props) => {
       transform: 'translateZ(0)',
       boxSizing: 'border-box',
       minHeight: lastOffset,
-      paddingTop: prevOffset,
+      paddingTop: previousOffset,
     }),
-    [lastOffset, prevOffset],
+    [lastOffset, previousOffset],
   );
 
   return (
