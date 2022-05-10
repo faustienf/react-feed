@@ -32,7 +32,7 @@ export const useFeed = (ref: RefObject<HTMLElement>, options: Options) => {
   const onScroll = useEvent((scrollTop: number) => {
     const [, foundIndex] = binarySearch(offsets, (offset, index) => {
       const previousOffest = offsets.get(index - 1) || 0;
-      const isFound = offset >= scrollTop && scrollTop > previousOffest;
+      const isFound = offset >= scrollTop && scrollTop >= previousOffest;
 
       if (isFound) {
         return 0;
@@ -41,12 +41,7 @@ export const useFeed = (ref: RefObject<HTMLElement>, options: Options) => {
       return scrollTop - offset;
     });
 
-    const index = foundIndex < 0
-      ? startIndex
-      : foundIndex;
-
-    const nextStartIndex = Math.max(index, 0);
-    onChangeStartIndex(nextStartIndex);
+    onChangeStartIndex(foundIndex);
   });
 
   useRaf(() => {
@@ -55,14 +50,13 @@ export const useFeed = (ref: RefObject<HTMLElement>, options: Options) => {
       return;
     }
 
-    Array.from(items.children).forEach((node, index) => {
-      if (!(node instanceof HTMLElement)) {
-        return;
+    for (let index = 0; index < items.children.length; index += 1) {
+      const node = items.children[index];
+      if (node instanceof HTMLElement) {
+        const indexOfList = startIndex + index;
+        changeElementOffset(node, indexOfList);
       }
-
-      const indexOfList = startIndex + index;
-      changeElementOffset(node, indexOfList);
-    });
+    }
 
     const scrollTop = onReadScrollTop(items);
     const previousScrollTop = onPrevious(scrollTop);

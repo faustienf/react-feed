@@ -1,10 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 
-import { Feed } from './feed';
+import { useFeed } from './feed';
 import { Article } from './article';
 import { ThresholdPx } from './threshold-px';
 import { ThresholdItems } from './threshold-items';
-import { useSetState } from './use-set-state';
 
 import './app.css';
 
@@ -18,20 +17,20 @@ const THRESHOLD_ITEMS = 2;
 const DISPLAY_ITEMS = 10;
 const MARGIN_GAP = 16;
 
+const limit = (target: number, min: number, max: number) => Math.min(Math.max(target, min), max);
+
 export const App = () => {
   const [startIndex, setStartIndex] = useState(0);
-  const [collapsed, onToggle] = useSetState<number>();
+  const itemsRef = useRef<HTMLDivElement>(null);
 
   const thresholdHeight = useMemo(
     () => items
       .slice(0, THRESHOLD_ITEMS)
       .reduce(
-        (acc, item) => (collapsed.has(item.id)
-          ? MARGIN_GAP + acc + item.height * 2
-          : MARGIN_GAP + acc + item.height),
+        (acc, item) => MARGIN_GAP + acc + item.height,
         0,
       ),
-    [collapsed],
+    [],
   );
 
   const onReadHeight = (itemEl: HTMLElement) => itemEl.offsetHeight + MARGIN_GAP;
@@ -40,9 +39,20 @@ export const App = () => {
     return Math.max(-1 * itemsEl.getBoundingClientRect().top, 0);
   };
 
-  const onChangeStartIndex = (nextStartIndex: number) => {
-    setStartIndex(Math.max(nextStartIndex - (THRESHOLD_ITEMS - 1), 0));
+  const onChangeStartIndex = (foundStartIndex: number) => {
+    const nextStartIndex = foundStartIndex < 0
+      ? startIndex
+      : foundStartIndex - (THRESHOLD_ITEMS - 1);
+
+    setStartIndex(limit(nextStartIndex, 0, items.length - 1));
   };
+
+  const { style } = useFeed(itemsRef, {
+    startIndex,
+    onChangeStartIndex,
+    onReadHeight,
+    onReadScrollTop,
+  });
 
   return (
     <section className="articles">
@@ -53,26 +63,19 @@ export const App = () => {
         style={{ top: THRESHOLD_PX, height: thresholdHeight }}
       />
 
-      <Feed
-        startIndex={startIndex}
-        onReadHeight={onReadHeight}
-        onReadScrollTop={onReadScrollTop}
-        onChangeStartIndex={onChangeStartIndex}
+      <div
+        ref={itemsRef}
+        style={style}
       >
         {items.slice(startIndex, startIndex + DISPLAY_ITEMS).map((item) => (
           <Article
             key={item.id}
-            style={{
-              height: collapsed.has(item.id)
-                ? item.height * 2
-                : item.height,
-            }}
-            onClick={() => onToggle(item.id)}
+            style={{ height: item.height }}
           >
             {item.id}
           </Article>
         ))}
-      </Feed>
+      </div>
     </section>
   );
 };
