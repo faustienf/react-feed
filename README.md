@@ -1,4 +1,7 @@
 # react-feed
+<p align="center">
+  <img src="https://raw.githubusercontent.com/faustienf/react-feed/master/public/picture.png" width="500">
+</p>
 
 ```tsx
 const [startIndex, setStartIndex] = useState(0);
