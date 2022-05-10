@@ -16,7 +16,7 @@ const { style } = useFeed(ref, {
   onChangeStartIndex: setStartIndex,
 });
 
-<div ref={ref} stype={style}>
+<div ref={ref} style={style}>
   {items.slice(startIndex, startIndex + 10).map((item) => (
     <Card key={item.id} />
   ))}
