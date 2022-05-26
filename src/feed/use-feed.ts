@@ -1,4 +1,4 @@
-import { CSSProperties, RefObject, useMemo } from 'react';
+import { CSSProperties, RefObject, useEffect, useMemo } from 'react';
 
 import { binarySearch } from './binary-search';
 import { useEvent } from './use-event';
@@ -8,6 +8,7 @@ import { useRaf } from './use-raf';
 
 type Options = {
   startIndex: number;
+  endIndex: number;
   onChangeStartIndex: (nextStartIndex: number) => void;
   onReadHeight: (element: HTMLElement, index: number) => number;
   onReadScrollTop: (element: HTMLElement) => number;
@@ -16,6 +17,7 @@ type Options = {
 export const useFeed = (ref: RefObject<HTMLElement>, options: Options) => {
   const {
     startIndex,
+    endIndex,
     onChangeStartIndex,
     onReadHeight,
     onReadScrollTop,
@@ -31,7 +33,11 @@ export const useFeed = (ref: RefObject<HTMLElement>, options: Options) => {
 
   const onScroll = useEvent((scrollTop: number) => {
     const [, foundIndex] = binarySearch(offsets, (offset, index) => {
-      const previousOffest = offsets.get(index - 1) || 0;
+      if (typeof offset !== 'number') {
+        return 1;
+      }
+
+      const previousOffest = offsets[index - 1] || 0;
       const isFound = offset >= scrollTop && scrollTop >= previousOffest;
 
       if (isFound) {
@@ -66,18 +72,16 @@ export const useFeed = (ref: RefObject<HTMLElement>, options: Options) => {
     }
   });
 
-  const lastOffset = offsets.get(offsets.size - 1) || 0;
-  const previousOffset = offsets.get(startIndex - 1) || 0;
+  const previousOffset = offsets[startIndex - 1] || 0;
+  const lastOffset = offsets[offsets.length - 1] || 0;
+  const nextOffset = lastOffset - (offsets[endIndex] || lastOffset);
 
   const style: CSSProperties = useMemo(
     () => ({
-      willChange: 'min-height, padding-top',
-      transform: 'translateZ(0)',
-      boxSizing: 'border-box',
-      minHeight: lastOffset,
       paddingTop: previousOffset,
+      paddingBottom: nextOffset,
     }),
-    [lastOffset, previousOffset],
+    [nextOffset, previousOffset],
   );
 
   return {

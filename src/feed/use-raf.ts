@@ -6,12 +6,15 @@ export const useRaf = <F extends () => void>(callback: F) => {
 
   useEffect(
     () => {
+      ref.current();
+      let requestId = NaN;
+
       const tick = () => {
-        requestAnimationFrame(tick);
+        requestId = requestAnimationFrame(tick);
         ref.current();
       };
 
-      const requestId = requestAnimationFrame(tick);
+      requestId = requestAnimationFrame(tick);
       return () => {
         cancelAnimationFrame(requestId);
       };

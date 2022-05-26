@@ -1,19 +1,19 @@
-type MapValueType<T> = T extends Map<any, infer V> ? V : never;
+type ArrayValue<T> = T extends (infer V)[] ? (V | undefined) : never;
 
-export const binarySearch = <L extends Map<number, any>>(
+export const binarySearch = <L extends any[]>(
   list: L,
-  comparator: (value: MapValueType<L>, index: number) => number,
-): [undefined | MapValueType<L>, number] => {
+  comparator: (value: ArrayValue<L>, index: number) => number,
+): [undefined | ArrayValue<L>, number] => {
   let start = 0;
-  let end = list.size - 1;
+  let end = list.length - 1;
 
   while (start <= end) {
     const middleIndex = Math.floor((start + end) / 2);
-    const position = comparator(list.get(middleIndex), middleIndex);
+    const position = comparator(list[middleIndex], middleIndex);
 
     // Found!!!
     if (position === 0) {
-      return [list.get(middleIndex) as MapValueType<L>, middleIndex];
+      return [list[middleIndex], middleIndex];
     }
 
     if (position > 0) {

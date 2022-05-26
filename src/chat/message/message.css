@@ -1,0 +1,11 @@
+.message {
+  border-radius: 24px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+  display: flex;
+  background-color: #fff;
+  color: var(--primary-color);
+  font-size: 20px;
+  line-height: 1.4;
+  padding: 24px;
+}
