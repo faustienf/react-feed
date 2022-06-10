@@ -1,4 +1,4 @@
-import { CSSProperties, RefObject, useEffect, useMemo } from 'react';
+import { CSSProperties, RefObject, useMemo } from 'react';
 
 import { binarySearch } from './binary-search';
 import { useEvent } from './use-event';

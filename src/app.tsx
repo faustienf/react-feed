@@ -10,7 +10,6 @@ import './app.css';
 const items = Array(100000).fill(0).map((_, index) => ({
   id: index,
   height: 100 + Math.round(Math.random() * 150),
-  height: 200,
 }));
 
 const THRESHOLD_PX = 300;
@@ -48,8 +47,11 @@ export const App = () => {
     setStartIndex(limit(nextStartIndex, 0, items.length - 1));
   };
 
+  const endIndex = Math.min(startIndex + DISPLAY_ITEMS - 1, items.length - 1);
+
   const { style } = useFeed(itemsRef, {
     startIndex,
+    endIndex,
     onChangeStartIndex,
     onReadHeight,
     onReadScrollTop,
