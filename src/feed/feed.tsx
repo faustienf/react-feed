@@ -11,6 +11,7 @@ export const Feed: FC<Props> = (props) => {
   const {
     children,
     startIndex,
+    endIndex,
     onChangeStartIndex,
     onReadHeight,
     onReadScrollTop,
@@ -20,6 +21,7 @@ export const Feed: FC<Props> = (props) => {
   const itemsRef = useRef<HTMLDivElement>(null);
   const { style } = useFeed(itemsRef, {
     startIndex,
+    endIndex,
     onChangeStartIndex,
     onReadHeight,
     onReadScrollTop,
